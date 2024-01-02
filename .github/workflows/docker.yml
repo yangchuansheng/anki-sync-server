@@ -2,17 +2,9 @@ name: Build and push anki-sync-server Docker image
 
 on:
   workflow_dispatch:
-    inputs:
-      anki_version:
-        description: 'Git tag from https://github.com/ankitects/anki/tags'
-        type: string
-        required: true
   push:
     tags:
         - '*'
-
-env:
-  ANKI_VERSION: ${{ github.event.inputs.anki_version || '23.12.1' }}
 
 jobs:
   deploy:
@@ -51,11 +43,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GH_PAT }}
 
+      - name: Get tag
+        id: tag
+        uses: devops-actions/action-get-tag@v1.0.1
+        with:
+          strip_v: true # Optional: Remove 'v' character from version
+
       - name: Build and push Docker images to ghcr.io and DockerHub
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            ANKI_VERSION=${{ env.ANKI_VERSION }}
+            ANKI_VERSION=${{steps.tag.outputs.tag}}
           context: .
           file: ./Dockerfile
           push: true
