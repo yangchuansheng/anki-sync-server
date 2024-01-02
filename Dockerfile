@@ -25,6 +25,8 @@ RUN mkdir /ankisyncdir \
 && usermod -G users ankisync
 
 VOLUME /syncserver
-EXPOSE 8080
+
+ARG SYNC_PORT
+EXPOSE ${SYNC_PORT}
 
 CMD ["anki-sync-server"]

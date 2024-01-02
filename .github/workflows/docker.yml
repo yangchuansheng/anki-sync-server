@@ -51,7 +51,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GH_PAT }}
 
-      - name: Build and push Docker images to ghcr.io and Aliyun Hub
+      - name: Build and push Docker images to ghcr.io and DockerHub
         uses: docker/build-push-action@v5
         with:
           build-args: |
