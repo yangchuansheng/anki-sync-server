@@ -2,16 +2,58 @@ name: Build and push anki-sync-server Docker image
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-        - '*'
+  schedule:
+    - cron: "11 0 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  get-latest-tag:
+    name: Get latest tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Anki
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ankitects/anki
+      - name: Get Anki latest tag
+        id: tag
+        run: echo "tag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+            ref: ${{ github.head_ref }}
+            fetch-depth: 0
+      - name: Get my latest tag
+        id: mytag
+        run: echo "mytag=$(git describe --tags `git rev-list --tags --max-count=1`)" >> "$GITHUB_OUTPUT"
+      - name: Add tag
+        id: addtag
+        if: steps.tag.outputs.tag != steps.mytag.outputs.mytag
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git tag ${{ steps.tag.outputs.tag }}
+          git push origin --tags
+          echo "addtag=true" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      addtag: ${{ steps.addtag.outputs.addtag }}
+
+  build-docker-image:
+    needs: get-latest-tag
+    if: needs.get-latest-tag.outputs.addtag == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.get-latest-tag.outputs.tag }}
 
       - name: Docker meta
         id: meta
@@ -23,6 +65,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/anki-sync-server
           tags: |
             type=ref,event=tag
+            type=raw,value=${{ needs.get-latest-tag.outputs.tag }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -43,17 +86,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GH_PAT }}
 
-      - name: Get tag
-        id: tag
-        uses: devops-actions/action-get-tag@v1.0.1
-        with:
-          strip_v: true # Optional: Remove 'v' character from version
+      #- name: Get tag
+      #  id: tag
+      #  uses: devops-actions/action-get-tag@v1.0.1
+      #  with:
+      #    strip_v: true # Optional: Remove 'v' character from version
 
       - name: Build and push Docker images to ghcr.io and DockerHub
         uses: docker/build-push-action@v5
         with:
           build-args: |
-            ANKI_VERSION=${{steps.tag.outputs.tag}}
+            ANKI_VERSION=${{ needs.get-latest-tag.outputs.tag }}
           context: .
           file: ./Dockerfile
           push: true
