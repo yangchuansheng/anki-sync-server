@@ -10,7 +10,7 @@ FROM debian:stable-slim as runner
 
 ENV TZ=Asia/Shanghai
 ENV SYNC_USER1=user:pass
-ENV SYNC_BASE=/ankisyncdir
+ENV SYNC_BASE=/syncserver
 ENV UID=1000
 ENV GID=1000
 ENV SYNC_PORT=8080
@@ -20,9 +20,11 @@ ENV MAX_SYNC_PAYLOAD_MEGS=100
 COPY --from=builder /usr/local/cargo/bin/anki-sync-server /usr/local/bin/anki-sync-server
 
 #create ankisync user
-RUN mkdir /ankisyncdir \
-&& useradd -u 1000 -U -d /ankisyncdir -s /bin/false ankisync \
+RUN mkdir /syncserver \
+&& useradd -u 1000 -U -d /syncserver -s /bin/false ankisync \
 && usermod -G users ankisync
+
+USER ankisync
 
 VOLUME /syncserver
 
