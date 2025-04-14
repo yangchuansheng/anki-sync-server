@@ -8,7 +8,7 @@ This is a personal Anki server, which you can sync against instead of AnkiWeb.
 
 ## Deploying on Sealos
 
-[![](https://raw.githubusercontent.com/labring-actions/templates/main/Deploy-on-Sealos.svg)](https://cloud.sealos.io/?openapp=system-template%3FtemplateName%3Danki-sync-server)
+[![Deploy on Sealos](https://sealos.io/Deploy-on-Sealos.svg)](https://template.sealos.io/deploy?templateName=anki-sync-server)
 
 ## Deploying with Docker
 
